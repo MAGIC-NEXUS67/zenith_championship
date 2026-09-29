@@ -1,16 +1,15 @@
 // ============================================================
-// ZENITH CHAMPIONSHIP - VISUALIZER PATCH v1.0
+// ZENITH CHAMPIONSHIP - VISUALIZER PATCH v1.1
 // ============================================================
-// · Estética premium: Negro + Plata + Dorado
-// · Series nav en fase regular (modal con tabs por partida)
-// · Play-In labels correctos en playoffs
-// · Soporte de PIG dinámico (Performance con bajadas reales)
-// · Balón de Oro con columnas ATK/DEF y flechas
-// · Salón de la Fama navegable (por temporada)
-// · Compatible con: playoffs-bracket-patch, player-history-patch,
-//   team-card-patch
+// Correcciones v1.1:
+//   - FIX: isZenith() detecta format zenith O zenithConfig.enabled
+//   - FIX: Series nav con HTML/CSS idéntico al de playoffs
+//   - FIX: Performance recalcula PIG dinámico desde partidos
+//   - FIX: Podio Balón de Oro con ATK/DEF + flechas
+//   - FIX: Navegación del Salón de la Fama funcional
+//   - FIX: Banner "Volver" en header
 // ============================================================
-// Carga DESPUÉS de todos los demás patches
+// Carga DESPUÉS de todos los demás patches del visualizador
 // ============================================================
 
 (function () {
@@ -41,7 +40,10 @@
 
     function isZenith(t) {
         t = t || getCurrentData();
-        return !!(t && t.format === 'zenith');
+        if (!t) return false;
+        if (t.format === 'zenith') return true;
+        if (t.zenithConfig && t.zenithConfig.enabled === true) return true;
+        return false;
     }
 
     function hasDynamicPIG(t) {
@@ -55,8 +57,12 @@
         return s.replace(/[&<>"']/g, m => map[m]);
     }
 
+    function clamp(v, min, max) {
+        return Math.max(min, Math.min(max, v));
+    }
+
     // ============================================================
-    // 2. THEME (M1)
+    // 2. PALETA
     // ============================================================
     const Z = {
         bg: '#0a0a0a', surface: '#141414', surfaceHover: '#1e1e1e',
@@ -67,6 +73,9 @@
         yellow: '#eab308', cyan: '#06b6d4', purple: '#9333ea'
     };
 
+    // ============================================================
+    // M1 — THEME
+    // ============================================================
     function injectZenithTheme() {
         if (!isZenith()) return;
         const root = document.documentElement;
@@ -175,11 +184,6 @@ body.zenith-theme .hamburger:hover { background: #1e1e1e; border-color: #d4af37;
 body.zenith-theme .section-title .print-btn:hover { background: #d4af37; color: #0a0a0a; }
 body.zenith-theme .bg-surface { background: #141414 !important; }
 body.zenith-theme .bg-surface_hover { background: #1e1e1e !important; }
-body.zenith-theme .text-neon-cyan { color: #06b6d4 !important; }
-body.zenith-theme .text-neon-pink { color: #d4af37 !important; }
-body.zenith-theme .text-neon-yellow { color: #f4d03f !important; }
-body.zenith-theme .text-neon-green { color: #16a34a !important; }
-body.zenith-theme .text-neon-red { color: #dc2626 !important; }
 body.zenith-theme header {
     border-bottom: 1px solid #2a2a2a;
     background: linear-gradient(180deg, rgba(10,10,10,0.95), rgba(15,15,15,0.95)) !important;
@@ -220,28 +224,6 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
 .zenith-table-col-silver { color: #c0c0c0 !important; font-weight: 700 !important; }
 .zenith-table-header-gold { color: #d4af37 !important; border-bottom: 2px solid rgba(212,175,55,0.4) !important; }
 
-.zenith-series-tabs {
-    display: flex; flex-wrap: wrap; gap: 0.4rem;
-    padding: 0.75rem 1rem; border-bottom: 1px solid #2a2a2a; background: rgba(0,0,0,0.3);
-}
-.zenith-series-tab {
-    padding: 0.4rem 0.9rem; border-radius: 8px;
-    background: transparent; border: 1px solid #2a2a2a; color: #a3a3a3;
-    font-weight: 900; font-size: 0.7rem; text-transform: uppercase;
-    letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; font-family: inherit;
-}
-.zenith-series-tab:hover { color: #ffffff; border-color: rgba(212,175,55,0.5); }
-.zenith-series-tab.active {
-    background: linear-gradient(135deg, #d4af37, #8b6914);
-    color: #0a0a0a; border-color: #d4af37; box-shadow: 0 0 16px rgba(212,175,55,0.4);
-}
-.zenith-series-tab.aggregate {
-    background: rgba(6,182,212,0.1); color: #06b6d4; border-color: rgba(6,182,212,0.3);
-}
-.zenith-series-tab.aggregate.active {
-    background: #06b6d4; color: #0a0a0a; box-shadow: 0 0 16px rgba(6,182,212,0.4);
-}
-
 .zenith-hall-card {
     background: linear-gradient(180deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.95) 100%);
     border: 1px solid #2a2a2a; border-radius: 16px; padding: 1rem;
@@ -270,17 +252,17 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
 .zenith-hall-dreamteam { display: flex; gap: 0.6rem; flex-wrap: wrap; font-size: 0.7rem; color: #a3a3a3; }
 
 .zenith-return-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.6rem; padding: 0.4rem 0.9rem; border-radius: 8px;
     background: linear-gradient(90deg, #8b6914 0%, #d4af37 50%, #8b6914 100%);
-    color: #0a0a0a; padding: 0.6rem 1rem; border-radius: 8px;
-    font-weight: 900; font-size: 0.75rem; letter-spacing: 0.1em;
-    text-transform: uppercase; display: flex; align-items: center;
-    justify-content: space-between; gap: 1rem; margin-bottom: 1rem;
-    box-shadow: 0 4px 20px rgba(212,175,55,0.3);
+    color: #0a0a0a; font-weight: 900; font-size: 0.7rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    box-shadow: 0 4px 20px rgba(212,175,55,0.35);
 }
 .zenith-return-banner button {
-    background: rgba(0,0,0,0.3); color: #0a0a0a; border: 2px solid #0a0a0a;
-    padding: 0.35rem 0.9rem; border-radius: 6px; font-weight: 900;
-    cursor: pointer; font-size: 0.7rem; letter-spacing: 0.05em;
+    background: rgba(0,0,0,0.35); color: #0a0a0a; border: 2px solid #0a0a0a;
+    padding: 0.25rem 0.7rem; border-radius: 6px; font-weight: 900;
+    cursor: pointer; font-size: 0.65rem; letter-spacing: 0.05em;
     text-transform: uppercase; transition: all 0.15s; font-family: inherit;
 }
 .zenith-return-banner button:hover { background: #0a0a0a; color: #d4af37; }
@@ -292,8 +274,6 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
         if (!isZenith()) return;
         const headerInfo = document.querySelector('header .header-info');
         if (!headerInfo) return;
-        if (headerInfo.dataset.zenithStyled === 'true') return;
-        headerInfo.dataset.zenithStyled = 'true';
         const indicators = headerInfo.querySelector('#header-indicators');
         const t = getCurrentData();
         const tournamentName = t ? t.name : '';
@@ -307,6 +287,7 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
             </div>
         `;
         if (indicators) headerInfo.appendChild(indicators);
+        headerInfo.dataset.zenithStyled = 'true';
     }
 
     function applyTableZenithStyles() {
@@ -336,92 +317,60 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
     }
 
     // ============================================================
-    // 3. SERIES NAV (M2)
+    // M2 — SERIES NAV (idéntico al de playoffs)
     // ============================================================
-    const _origShowMatchStats = window.showMatchStats;
-
-    window.showMatchStats = function (matchId) {
-        const t = getCurrentData();
-        if (!t) return;
-        let match = null;
-        for (const round of (t.rounds || [])) {
-            match = round.find(m => m.id === matchId);
-            if (match) break;
-        }
-        if (!match) {
-            for (const fm of (t.friendlyMatches || [])) {
-                if (fm.id === matchId) { match = fm; break; }
-            }
-        }
-        if (!match || !match.box || !match.box.enabled) {
-            return _origShowMatchStats.call(this, matchId);
-        }
-        buildBoxSeriesModal(match, t);
-    };
-
-    function buildBoxSeriesModal(match, torneo) {
+    function buildSeriesModal(match, torneo) {
         const h = torneo.teams.find(x => x.id === match.h);
         const a = torneo.teams.find(x => x.id === match.a);
-        const hName = h ? h.name : 'Desconocido';
-        const aName = a ? a.name : 'Desconocido';
-        const hShield = h ? h.shield : '';
-        const aShield = a ? a.shield : '';
         const box = match.box || {};
         const games = box.games || [];
         const winsH = box.winsH || 0;
         const winsA = box.winsA || 0;
         const boxLabel = box.label || '';
+        const hWinner = winsH > winsA;
+        const aWinner = winsA > winsH;
+
+        const tabsHtml = games.map((g, i) => {
+            const isActive = i === 0;
+            return `<button class="pbx-tab ${isActive ? 'active' : ''}" data-game-idx="${i}" onclick="window.ZenithSeriesNav.selectGame(${i})">Partido ${i + 1} · ${g.sH}-${g.sA}</button>`;
+        }).join('');
+        const aggTab = `<button class="pbx-tab aggregate" data-game-idx="agg" onclick="window.ZenithSeriesNav.selectGame('agg')">Σ Suma Total</button>`;
 
         const modalHtml = `
-            <div class="print-modal-overlay" id="zenith-series-modal" onclick="if(event.target===this) this.remove()">
-                <div class="match-stats-modal" style="max-width: 900px;">
+            <div class="pbx-modal-overlay" id="zenith-series-overlay" onclick="if(event.target===this) window.ZenithSeriesNav.close()">
+                <div class="pbx-modal">
                     <div class="match-stats-header">
-                        <div class="team-block ${winsH > winsA ? 'winner' : ''}">
-                            <img src="${hShield}" alt="">
-                            <div class="team-name">${esc(hName)}</div>
+                        <div class="team-block ${hWinner ? 'winner' : ''}">
+                            <img src="${h ? h.shield : ''}" alt="">
+                            <div class="team-name">${h ? esc(h.name) : 'TBD'}</div>
                         </div>
                         <div class="match-stats-score">${winsH} - ${winsA}</div>
-                        <div class="team-block ${winsA > winsH ? 'winner' : ''}">
-                            <img src="${aShield}" alt="">
-                            <div class="team-name">${esc(aName)}</div>
+                        <div class="team-block ${aWinner ? 'winner' : ''}">
+                            <img src="${a ? a.shield : ''}" alt="">
+                            <div class="team-name">${a ? esc(a.name) : 'TBD'}</div>
                         </div>
                     </div>
-                    <div class="text-center font-black uppercase tracking-widest mt-2" style="color:#d4af37;font-size:0.75rem;">
-                        Serie ${boxLabel} · ${games.length} partida(s)
+                    <div class="pbx-match-series-label">SERIE ${boxLabel} · ${games.length} partida(s)</div>
+                    <div class="pbx-modal-tabs">
+                        ${tabsHtml}
+                        ${aggTab}
                     </div>
-                    <div class="zenith-series-tabs" id="zenith-series-tabs">
-                        ${games.map((g, i) => `
-                            <button class="zenith-series-tab ${i === 0 ? 'active' : ''}" data-game-idx="${i}">
-                                P${i + 1} · ${g.sH}-${g.sA}
-                            </button>
-                        `).join('')}
-                        <button class="zenith-series-tab aggregate" data-game-idx="agg">Σ Suma Total</button>
-                    </div>
-                    <div id="zenith-series-stats-body" class="match-stats-body">
-                        ${buildSeriesStatsBody(match, torneo, 0)}
+                    <div id="zenith-series-body" class="pbx-modal-stats-body">
+                        ${buildSeriesStatsHtml(match, torneo, 0)}
                     </div>
                     <div class="match-stats-actions">
-                        <button class="btn-cancel" onclick="document.getElementById('zenith-series-modal').remove()">Cerrar</button>
+                        <button class="btn-cancel" onclick="window.ZenithSeriesNav.close()">Cerrar</button>
                     </div>
                 </div>
             </div>
         `;
-        document.querySelectorAll('#zenith-series-modal').forEach(el => el.remove());
+        document.querySelectorAll('#zenith-series-overlay').forEach(el => el.remove());
         const wrapper = document.createElement('div');
         wrapper.innerHTML = modalHtml;
         document.body.appendChild(wrapper);
-        wrapper.querySelectorAll('#zenith-series-tabs .zenith-series-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                wrapper.querySelectorAll('#zenith-series-tabs .zenith-series-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                const idx = tab.dataset.gameIdx;
-                const body = document.getElementById('zenith-series-stats-body');
-                if (body) body.innerHTML = buildSeriesStatsBody(match, torneo, idx);
-            });
-        });
     }
 
-    function buildSeriesStatsBody(match, torneo, gameIdx) {
+    function buildSeriesStatsHtml(match, torneo, gameIdx) {
         const h = torneo.teams.find(x => x.id === match.h);
         const a = torneo.teams.find(x => x.id === match.a);
         const box = match.box || {};
@@ -472,7 +421,7 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
             </div>`;
         };
         return `
-            <div style="text-align:center;padding:0.5rem;color:#d4af37;font-weight:900;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;">${label}</div>
+            <div class="pbx-stats-label">${label}</div>
             <div class="match-stats-body">
                 ${renderTeamTable(h, hStats)}
                 ${renderTeamTable(a, aStats)}
@@ -480,8 +429,55 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
         `;
     }
 
+    window.ZenithSeriesNav = {
+        _match: null,
+        _torneo: null,
+        open: function (match, torneo) {
+            window.ZenithSeriesNav._match = match;
+            window.ZenithSeriesNav._torneo = torneo;
+            buildSeriesModal(match, torneo);
+        },
+        selectGame: function (idx) {
+            const match = window.ZenithSeriesNav._match;
+            const torneo = window.ZenithSeriesNav._torneo;
+            if (!match || !torneo) return;
+            document.querySelectorAll('#zenith-series-overlay .pbx-tab').forEach(tab => {
+                const tabIdx = tab.dataset.gameIdx;
+                const isActive = (tabIdx === 'agg') ? (idx === 'agg') : (parseInt(tabIdx) === idx);
+                tab.classList.toggle('active', isActive);
+            });
+            const body = document.getElementById('zenith-series-body');
+            if (body) body.innerHTML = buildSeriesStatsHtml(match, torneo, idx);
+        },
+        close: function () {
+            document.querySelectorAll('#zenith-series-overlay').forEach(el => el.remove());
+            window.ZenithSeriesNav._match = null;
+            window.ZenithSeriesNav._torneo = null;
+        }
+    };
+
+    const _origShowMatchStats = window.showMatchStats;
+    window.showMatchStats = function (matchId) {
+        const t = getCurrentData();
+        if (!t) return;
+        let match = null;
+        for (const round of (t.rounds || [])) {
+            match = round.find(m => m.id === matchId);
+            if (match) break;
+        }
+        if (!match) {
+            for (const fm of (t.friendlyMatches || [])) {
+                if (fm.id === matchId) { match = fm; break; }
+            }
+        }
+        if (!match || !match.box || !match.box.enabled) {
+            return _origShowMatchStats.call(this, matchId);
+        }
+        window.ZenithSeriesNav.open(match, t);
+    };
+
     // ============================================================
-    // 4. PLAY-IN LABELS (M3)
+    // M3 — PLAY-IN LABELS
     // ============================================================
     function renamePlayInRound() {
         const t = getCurrentData();
@@ -512,38 +508,161 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
     }
 
     // ============================================================
-    // 5. DYNAMIC PIG SUPPORT (M4)
+    // M4 — DYNAMIC PIG (recalculado desde partidos)
     // ============================================================
-    if (typeof window.calculatePlayerMarketValueHistory === 'function') {
-        const _origCalcMarketHistory = window.calculatePlayerMarketValueHistory;
-        window.calculatePlayerMarketValueHistory = function (playerId, torneo) {
-            const t = torneo || getCurrentData();
-            if (!t) return [];
-            let player = null;
-            for (const tm of (t.teams || [])) {
-                const found = tm.players.find(p => p.id === playerId);
-                if (found) { player = found; break; }
+    function calculateDynamicPigHistory(playerId, torneo) {
+        if (typeof window.getPlayoffLabels !== 'function') return [];
+        const labels = window.getPlayoffLabels(torneo);
+        const history = [];
+
+        let player = null, team = null;
+        for (const tm of (torneo.teams || [])) {
+            const found = tm.players.find(p => p.id === playerId);
+            if (found) { player = found; team = tm; break; }
+        }
+        if (!player || !team) return [];
+
+        let accStats = { goals: 0, assists: 0, saves: 0, shots: 0, matches: 0 };
+        let teamGoalsAgainst = 0;
+        let pigPerMatchHistory = [];
+        let pigDynamic = 50;
+        let pigTrend = '—';
+
+        labels.forEach((label, idx) => {
+            let roundGoals = 0, roundAssists = 0, roundSaves = 0, roundShots = 0, roundMatches = 0;
+            let roundTeamGA = 0;
+
+            const processMatch = (m) => {
+                if (!m || !m.played) return;
+                const isHome = m.h === team.id;
+                const isAway = m.a === team.id;
+                if (!isHome && !isAway) return;
+                roundMatches++;
+                roundTeamGA += isHome ? (m.sA || 0) : (m.sH || 0);
+                const stat = (m.stats || []).find(s => s.pId === playerId);
+                if (stat) {
+                    roundGoals += stat.g || 0;
+                    roundAssists += stat.a || 0;
+                    roundSaves += stat.s || 0;
+                    roundShots += stat.t || 0;
+                }
+            };
+
+            if (label.type === 'liguilla') {
+                const round = torneo.rounds?.[label.round];
+                if (round) round.forEach(processMatch);
+            } else if (label.type === 'playoff') {
+                const round = torneo.playoffs?.rounds?.[label.round];
+                if (round) round.forEach(processMatch);
             }
-            if (!player && t.freeAgents) player = t.freeAgents.find(p => p.id === playerId);
-            if (player && Array.isArray(player.valueHistory) && player.valueHistory.length > 0) {
-                return player.valueHistory.map(v => ({
-                    label: `J${(v.round || 0) + 1}`,
-                    marketValue: v.value || 0,
-                    pig: v.pig || 0,
-                    roundIdx: v.round || 0,
-                    hasData: true
-                }));
+
+            accStats.goals += roundGoals;
+            accStats.assists += roundAssists;
+            accStats.saves += roundSaves;
+            accStats.shots += roundShots;
+            accStats.matches += roundMatches;
+            teamGoalsAgainst += roundTeamGA;
+
+            const matchesCount = Math.max(1, accStats.matches);
+
+            // Streak factor
+            let streakFactor = 1.0;
+            if (pigPerMatchHistory.length >= 3) {
+                const last5 = pigPerMatchHistory.slice(-5);
+                const recentAvg = last5.reduce((a, b) => a + b, 0) / last5.length;
+                const globalAvg = pigPerMatchHistory.reduce((a, b) => a + b, 0) / pigPerMatchHistory.length;
+                if (globalAvg > 0) streakFactor = clamp(recentAvg / globalAvg, 0.5, 1.5);
             }
-            return _origCalcMarketHistory.call(this, playerId, torneo);
-        };
+
+            // ATK
+            let atkBase = 50;
+            if (accStats.shots === 0 && accStats.goals === 0) atkBase = 50;
+            else if (accStats.shots === 0) atkBase = 70;
+            else {
+                const conversion = accStats.goals / accStats.shots;
+                const volume = Math.min(accStats.shots / matchesCount, 10) / 10;
+                atkBase = 50 + (conversion * 30) + (volume * 20);
+            }
+
+            // DEF
+            let defBase;
+            if (accStats.saves === 0) {
+                const teamDefQuality = clamp((team.def || 50) / 500, 0, 1);
+                defBase = 30 + (teamDefQuality * 40);
+            } else {
+                const saveRate = accStats.saves / (accStats.saves + teamGoalsAgainst);
+                const saveVolume = Math.min(accStats.saves / matchesCount, 10) / 10;
+                defBase = 50 + (saveRate * 30) + (saveVolume * 20);
+            }
+
+            const atk = clamp(atkBase * streakFactor, 10, 99);
+            const def = clamp(defBase * streakFactor, 10, 99);
+            const newTarget = (atk + def) / 2;
+            const oldPIG = pigDynamic;
+            const newPIG = idx === 0 ? newTarget : (oldPIG * 0.6 + newTarget * 0.4);
+
+            const delta = newPIG - oldPIG;
+            pigTrend = delta > 0.5 ? '▲' : (delta < -0.5 ? '▼' : '—');
+            pigDynamic = Math.round(newPIG * 10) / 10;
+
+            if (roundMatches > 0) {
+                const matchPIG = (roundGoals * 2) + (roundAssists * 1.5) + (roundSaves * 1) + (roundShots * 0.2);
+                pigPerMatchHistory.push(matchPIG);
+            }
+
+            // Precio
+            const roleMult = player.isCaptain ? 1.8
+                : (player.role === 'Titular 🌟' ? 1.4
+                : (player.role === 'Suplente 🔄' ? 0.9 : 0.6));
+            const roleAjust = 0.9 + roleMult * 0.1;
+            const trendMult = pigTrend === '▲' ? 1.05 : (pigTrend === '▼' ? 0.95 : 1.0);
+            const pigPrice = 55000 * Math.pow(pigDynamic / 50, 4.1);
+            const finalPrice = Math.max(500, Math.round(pigPrice * roleAjust * trendMult / 100) * 100);
+
+            history.push({
+                label: label.label,
+                type: label.type,
+                roundIdx: label.roundIdx,
+                marketValue: finalPrice,
+                pig: pigDynamic,
+                atk: atk,
+                def: def,
+                trend: pigTrend,
+                hasData: label.hasData,
+                matches: accStats.matches,
+                goals: accStats.goals,
+                assists: accStats.assists,
+                saves: accStats.saves,
+                shots: accStats.shots
+            });
+        });
+
+        return history;
     }
 
+    const _origCalcMarketHistory = window.calculatePlayerMarketValueHistory;
+    window.calculatePlayerMarketValueHistory = function (playerId, torneo) {
+        const t = torneo || getCurrentData();
+        if (!t) return [];
+        if (hasDynamicPIG(t)) {
+            const dynamicHistory = calculateDynamicPigHistory(playerId, t);
+            if (dynamicHistory.length > 0) return dynamicHistory;
+        }
+        if (typeof _origCalcMarketHistory === 'function') {
+            return _origCalcMarketHistory.call(this, playerId, torneo);
+        }
+        return [];
+    };
+
     // ============================================================
-    // 6. BALÓN DE ORO CON ATK/DEF (M5)
+    // M5 — BALÓN DE ORO con ATK/DEF
     // ============================================================
-    function upgradeBdorTable() {
-        const t = getCurrentData();
-        if (!t || !hasDynamicPIG(t)) return;
+    const _origRenderBalon = window.renderBalon;
+    window.renderBalon = function (torneo) {
+        const t = torneo || getCurrentData();
+        if (!t || !hasDynamicPIG(t)) {
+            return _origRenderBalon.call(this, torneo);
+        }
         let hasDynamic = false;
         for (const tm of (t.teams || [])) {
             for (const p of (tm.players || [])) {
@@ -551,97 +670,137 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
             }
             if (hasDynamic) break;
         }
-        if (!hasDynamic) return;
-        const bdorSection = document.querySelector('#section-balon');
-        if (!bdorSection) return;
-        const table = bdorSection.querySelector('table');
-        if (!table || table.dataset.zenithUpgraded === 'true') return;
-        table.dataset.zenithUpgraded = 'true';
-        const thead = table.querySelector('thead tr');
-        if (thead) {
-            const ths = Array.from(thead.querySelectorAll('th'));
-            let pigIdx = -1;
-            ths.forEach((th, i) => {
-                if (th.textContent.toUpperCase().includes('PIG')) pigIdx = i;
+        if (!hasDynamic) return _origRenderBalon.call(this, torneo);
+
+        return renderDynamicBalon(t);
+    };
+
+    function renderDynamicBalon(t) {
+        const allPlayers = [];
+        t.teams.forEach(team => {
+            (team.players || []).forEach(p => {
+                if (p && p.name && p.name.trim() !== '') {
+                    const pig = p.pigDynamic !== undefined ? p.pigDynamic : (p.seasonStats?.pig || 0);
+                    allPlayers.push({
+                        id: p.id, name: p.name,
+                        teamName: team.name, teamShield: team.shield,
+                        pig: pig,
+                        trend: p.pigTrend || '—',
+                        atk: p.atkDynamic !== undefined ? p.atkDynamic : '-',
+                        def: p.defDynamic !== undefined ? p.defDynamic : '-',
+                        rocketRank: p.rocketRank || 'Platino'
+                    });
+                }
             });
-            if (pigIdx > 0) {
-                const atkTh = document.createElement('th');
-                atkTh.textContent = 'ATK';
-                atkTh.style.cssText = 'text-align:center;color:#06b6d4;font-weight:900;';
-                const defTh = document.createElement('th');
-                defTh.textContent = 'DEF';
-                defTh.style.cssText = 'text-align:center;color:#d4af37;font-weight:900;';
-                ths[pigIdx].insertAdjacentElement('beforebegin', atkTh);
-                ths[pigIdx].insertAdjacentElement('beforebegin', defTh);
-            }
-        }
-        const tbody = table.querySelector('tbody');
-        if (!tbody) return;
-        tbody.querySelectorAll('tr').forEach(row => {
-            const tds = row.querySelectorAll('td');
-            if (tds.length < 3) return;
-            const nameCell = row.querySelector('td:nth-child(2)');
-            if (!nameCell) return;
-            const playerName = nameCell.textContent.replace(/[👑🆓↪]/g, '').trim();
-            let playerObj = null;
-            for (const tm of (t.teams || [])) {
-                const found = tm.players.find(p => p.name.trim() === playerName);
-                if (found) { playerObj = found; break; }
-            }
-            const atk = playerObj && playerObj.atkDynamic !== undefined ? playerObj.atkDynamic : '-';
-            const def = playerObj && playerObj.defDynamic !== undefined ? playerObj.defDynamic : '-';
-            const trend = playerObj && playerObj.pigTrend ? playerObj.pigTrend : '';
-            const lastTd = tds[tds.length - 1];
-            const atkTd = document.createElement('td');
-            atkTd.textContent = typeof atk === 'number' ? atk.toFixed(0) : atk;
-            atkTd.style.cssText = 'text-align:center;color:#06b6d4;font-weight:900;';
-            const defTd = document.createElement('td');
-            defTd.textContent = typeof def === 'number' ? def.toFixed(0) : def;
-            defTd.style.cssText = 'text-align:center;color:#d4af37;font-weight:900;';
-            if (trend && lastTd) {
-                const trendSpan = document.createElement('span');
-                trendSpan.textContent = ' ' + trend;
-                const color = trend === '▲' ? '#16a34a' : (trend === '▼' ? '#dc2626' : '#a3a3a3');
-                trendSpan.style.cssText = `color:${color};font-weight:900;margin-left:0.3rem;`;
-                lastTd.appendChild(trendSpan);
-            }
-            if (lastTd) {
-                lastTd.insertAdjacentElement('beforebegin', atkTd);
-                lastTd.insertAdjacentElement('beforebegin', defTd);
-            }
         });
+        if (!allPlayers.length) return '<div class="empty-state">Sin jugadores.</div>';
+        const sorted = allPlayers.sort((a, b) => (b.pig || 0) - (a.pig || 0));
+        const trendColor = { '▲': '#16a34a', '▼': '#dc2626', '—': '#a3a3a3' };
+
+        // Podio
+        const top3 = sorted.slice(0, 3);
+        const medals = ['🥇', '🥈', '🥉'];
+        const colors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+        const positionsDisplay = ['1°', '2°', '3°'];
+
+        let podiumHtml = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem; width:100%; max-width:900px; margin:0 auto 1.5rem;">`;
+        for (let i = 0; i < 3; i++) {
+            const p = top3[i];
+            const color = colors[i];
+            const medal = medals[i];
+            if (!p) {
+                podiumHtml += `<div style="background:rgba(20,20,30,0.6); border:2px dashed #2d2d44; border-radius:20px; padding:1.5rem 1rem; min-height:340px; display:flex; align-items:center; justify-content:center; color:#6b7280; font-style:italic; font-size:0.85rem;">Sin jugador</div>`;
+                continue;
+            }
+            const atkVal = typeof p.atk === 'number' ? p.atk.toFixed(0) : p.atk;
+            const defVal = typeof p.def === 'number' ? p.def.toFixed(0) : p.def;
+            podiumHtml += `
+                <div onclick="showPlayerProfile('${p.id}')"
+                     style="background:linear-gradient(180deg, ${color}20 0%, rgba(20,20,20,0.95) 100%); border:3px solid ${color}; border-radius:20px; padding:1.25rem 1rem 1rem; text-align:center; cursor:pointer; box-shadow:0 8px 32px ${color}40; min-height:340px; display:flex; flex-direction:column; align-items:center; position:relative; transition:transform 0.2s;"
+                     onmouseover="this.style.transform='translateY(-4px)';"
+                     onmouseout="this.style.transform='';">
+                    <div style="position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:2rem; filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));">${medal}</div>
+                    <div style="font-size:0.7rem; font-weight:900; color:${color}; letter-spacing:0.15em; text-transform:uppercase; margin-top:0.5rem; margin-bottom:0.75rem;">${positionsDisplay[i]} LUGAR</div>
+                    <div style="width:80px; height:80px; border-radius:50%; background:#000; border:4px solid ${color}; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:0.75rem; flex-shrink:0; box-shadow:0 0 20px ${color}55;">
+                        <img src="${p.teamShield || ''}" style="width:100%; height:100%; object-fit:contain;" onerror="this.style.display='none';">
+                    </div>
+                    <div style="font-weight:900; font-size:0.95rem; color:#fff; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:0.15rem;" title="${esc(p.name)}">${esc(p.name)}</div>
+                    <div style="font-size:0.7rem; color:#a3a3a3; margin-bottom:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%;">${esc(p.teamName)}</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; width:100%; margin-bottom:0.75rem;">
+                        <div style="background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.35); border-radius:10px; padding:0.5rem 0.25rem;">
+                            <div style="font-size:0.55rem; color:#06b6d4; font-weight:900; letter-spacing:0.1em;">ATK</div>
+                            <div style="font-size:1.25rem; color:#fff; font-weight:900; line-height:1; margin-top:0.1rem;">${atkVal}</div>
+                        </div>
+                        <div style="background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); border-radius:10px; padding:0.5rem 0.25rem;">
+                            <div style="font-size:0.55rem; color:#d4af37; font-weight:900; letter-spacing:0.1em;">DEF</div>
+                            <div style="font-size:1.25rem; color:#fff; font-weight:900; line-height:1; margin-top:0.1rem;">${defVal}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:auto; display:flex; align-items:baseline; justify-content:center; gap:0.35rem;">
+                        <span style="font-size:1.6rem; font-weight:900; color:#d4af37; text-shadow:0 0 12px rgba(212,175,55,0.5);">${(p.pig || 0).toFixed(1)}</span>
+                        <span style="font-size:1rem; color:${trendColor[p.trend]}; font-weight:900;">${p.trend}</span>
+                    </div>
+                    <div style="font-size:0.55rem; color:#a3a3a3; text-transform:uppercase; letter-spacing:0.15em; margin-top:0.15rem;">PIG</div>
+                </div>`;
+        }
+        podiumHtml += '</div>';
+
+        // Tabla
+        let tableHtml = `<div class="table-wrap"><table><thead><tr>
+            <th style="text-align:center;">#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th style="text-align:center;color:#06b6d4;">ATK</th>
+            <th style="text-align:center;color:#d4af37;">DEF</th>
+            <th style="text-align:right;color:#d4af37;">PIG</th>
+            <th style="text-align:center;">Rango</th>
+        </tr></thead><tbody>`;
+        sorted.slice(3).forEach((p, i) => {
+            const atkVal = typeof p.atk === 'number' ? p.atk.toFixed(0) : p.atk;
+            const defVal = typeof p.def === 'number' ? p.def.toFixed(0) : p.def;
+            tableHtml += `<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer;">
+                <td style="text-align:center;">${i + 4}</td>
+                <td class="flex-center"><img src="${p.teamShield || ''}" class="shield-sm"> ${esc(p.name)}</td>
+                <td>${esc(p.teamName)}</td>
+                <td style="text-align:center;color:#06b6d4;font-weight:900;">${atkVal}</td>
+                <td style="text-align:center;color:#d4af37;font-weight:900;">${defVal}</td>
+                <td style="text-align:right;color:#d4af37;font-weight:900;">
+                    ${(p.pig || 0).toFixed(1)}
+                    <span style="color:${trendColor[p.trend]}; margin-left:0.3rem;">${p.trend}</span>
+                </td>
+                <td style="text-align:center;font-size:0.7rem;">${p.rocketRank}</td>
+            </tr>`;
+        });
+        tableHtml += `</tbody></table></div>`;
+
+        return podiumHtml + tableHtml;
     }
 
     // ============================================================
-    // 7. HALL OF FAME COMPLETO (M6)
+    // M6 — HALL OF FAME navegable
     // ============================================================
     let zenithSeasonView = null;
     let _savedCurrentData = null;
 
-    function upgradeHallOfFame() {
-        const t = getCurrentData();
-        if (!t) return;
-        const container = document.querySelector('#section-salon');
-        if (!container) return;
-        const content = container.querySelector('#hall-content');
-        if (!content) return;
+    const _origRenderSalon = window.renderSalon;
+    window.renderSalon = function (torneo) {
+        const t = torneo || getCurrentData();
+        if (!t || !t.seasons || t.seasons.length === 0) {
+            return _origRenderSalon.call(this, torneo);
+        }
         const originalTorneo = zenithSeasonView ? _savedCurrentData : t;
-        if (!originalTorneo.seasons || originalTorneo.seasons.length === 0) return;
-        if (content.dataset.zenithUpgraded === 'true' && !zenithSeasonView) return;
-        content.dataset.zenithUpgraded = 'true';
+        const seasons = originalTorneo.seasons || [];
         let html = '';
         if (zenithSeasonView) {
             const championName = getChampionName(zenithSeasonView);
-            html += `
-                <div class="zenith-return-banner">
-                    <span>📖 Viendo: ${esc(zenithSeasonView.name)} — Campeón: ${esc(championName)}</span>
-                    <button onclick="window.ZenithReturnToCurrent()">← Volver a temporada actual</button>
-                </div>
-            `;
+            html += `<div class="zenith-return-banner" style="margin-bottom:1rem;">
+                <span>📖 Viendo: ${esc(zenithSeasonView.name)} · Campeón: ${esc(championName)}</span>
+                <button onclick="window.ZenithReturnToCurrent()">← Volver a temporada actual</button>
+            </div>`;
         }
         html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;">`;
-        originalTorneo.seasons.slice().reverse().forEach((season, idx) => {
-            const realIdx = originalTorneo.seasons.length - 1 - idx;
+        seasons.slice().reverse().forEach((season, idx) => {
+            const realIdx = seasons.length - 1 - idx;
             const champion = season.champion ? (season.teams || []).find(tm => tm.id === season.champion) : null;
             const dreamTeam = season.dreamTeam || {};
             const date = new Date(season.date).toLocaleDateString('es-MX');
@@ -674,8 +833,8 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
             `;
         });
         html += `</div>`;
-        content.innerHTML = html;
-    }
+        return html;
+    };
 
     function getChampionName(season) {
         if (!season.champion) return '—';
@@ -689,10 +848,9 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
         if (!zenithSeasonView) _savedCurrentData = currentTorneo;
         const season = currentTorneo.seasons[seasonIdx];
         zenithSeasonView = season;
-        const pseudoTorneo = {
-            ..._savedCurrentData,
+        const pseudoTorneo = Object.assign({}, _savedCurrentData, {
             name: _savedCurrentData.name + ' · ' + season.name,
-            teams: season.teams,
+            teams: season.teams || [],
             rounds: season.rounds || [],
             playoffs: season.playoffs || null,
             friendlyMatches: season.friendlyMatches || [],
@@ -700,22 +858,22 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
             sanctionsLog: season.sanctionsLog || [],
             tableConfig: season.tableConfig || _savedCurrentData.tableConfig,
             zenithConfig: season.zenithConfig || _savedCurrentData.zenithConfig,
-            dynamicPIGEnabled: season.dynamicPIGEnabled || false,
+            dynamicPIGEnabled: season.dynamicPIGEnabled || _savedCurrentData.dynamicPIGEnabled,
             seasons: _savedCurrentData.seasons,
             _isHistoricalView: true,
             _originalData: _savedCurrentData
-        };
+        });
         setCurrentData(pseudoTorneo);
-        if (typeof window.applyData === 'function') {
-            window.applyData(pseudoTorneo);
-        } else if (typeof window.buildUI === 'function') {
-            window.buildUI(pseudoTorneo);
-            if (typeof window.switchView === 'function') window.switchView('salon');
-        }
+        try {
+            if (typeof window.buildUI === 'function') {
+                window.buildUI(pseudoTorneo);
+                if (typeof window.switchView === 'function') window.switchView('salon');
+            }
+        } catch (e) { console.error('[zenith] Error navegando a temporada:', e); }
         setTimeout(() => {
-            upgradeHallOfFame();
+            injectReturnBanner();
             injectZenithHeader();
-        }, 150);
+        }, 100);
     };
 
     window.ZenithReturnToCurrent = function () {
@@ -724,29 +882,44 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
         const restore = _savedCurrentData;
         _savedCurrentData = null;
         setCurrentData(restore);
-        if (typeof window.applyData === 'function') {
-            window.applyData(restore);
-        } else if (typeof window.buildUI === 'function') {
-            window.buildUI(restore);
-            if (typeof window.switchView === 'function') window.switchView('salon');
-        }
+        try {
+            if (typeof window.buildUI === 'function') {
+                window.buildUI(restore);
+                if (typeof window.switchView === 'function') window.switchView('salon');
+            }
+        } catch (e) { console.error('[zenith] Error volviendo:', e); }
         setTimeout(() => {
-            upgradeHallOfFame();
             injectZenithHeader();
-        }, 150);
+        }, 100);
     };
 
+    function injectReturnBanner() {
+        if (!zenithSeasonView) return;
+        const header = document.querySelector('header');
+        if (!header) return;
+        const existing = header.querySelector('.zenith-return-banner');
+        if (existing) existing.remove();
+        const actions = header.querySelector('.header-actions');
+        if (!actions) return;
+        const championName = getChampionName(zenithSeasonView);
+        const banner = document.createElement('div');
+        banner.className = 'zenith-return-banner';
+        banner.innerHTML = `
+            <span>📖 ${esc(zenithSeasonView.name)} · ${esc(championName)}</span>
+            <button onclick="window.ZenithReturnToCurrent()">← Volver</button>
+        `;
+        actions.insertBefore(banner, actions.firstChild);
+    }
+
     // ============================================================
-    // 8. INIT
+    // INIT
     // ============================================================
     function observeViews() {
         const observer = new MutationObserver(() => {
             applyTableZenithStyles();
             renamePlayInRound();
-            upgradeBdorTable();
-            upgradeHallOfFame();
         });
-        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     function init() {
@@ -758,6 +931,7 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
                 const hi = document.querySelector('header .header-info');
                 if (hi && hi.dataset.zenithStyled !== 'true') injectZenithHeader();
                 applyTableZenithStyles();
+                if (zenithSeasonView) injectReturnBanner();
             }
         }, 800);
     }
@@ -769,7 +943,7 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
     }
 
     // ============================================================
-    // 9. PUBLIC API
+    // PUBLIC API
     // ============================================================
     window.ZenithVisualPatch = {
         isZenith: isZenith,
@@ -777,11 +951,9 @@ body.zenith-theme .match-stats-table thead th.t { color: #f4d03f; }
         refresh: () => {
             applyTableZenithStyles();
             renamePlayInRound();
-            upgradeBdorTable();
-            upgradeHallOfFame();
         },
         getViewingSeason: () => zenithSeasonView
     };
 
-    console.log('✅ Zenith Visual Patch v1.0 cargado');
+    console.log('✅ Zenith Visual Patch v1.1 cargado');
 })();
