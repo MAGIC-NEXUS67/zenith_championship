@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes" />
+  <title>MTM · Visualizador de Torneo</title>
+
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <script src="https://cdn.polyfill.io/v3/polyfill.min.js?features=fetch,Promise,Array.from,Element.prototype.closest"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,900&family=Montserrat:ital,wght@0,400;0,700;0,900;1,900&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+
+  <script>
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    if (!isIOS()) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
+    }
+  </script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-container" id="logoContainer">
+        <img id="logoImage" src="" alt="Logo" style="display:none;" />
+        <span class="no-logo" id="noLogoText">🖼️ Logo</span>
+      </div>
+      <h1 class="mtm" id="brandTitle">MTM <span>NEXUS</span></h1>
+      <small id="brandSub">Visualizador de Torneo</small>
+    </div>
+    <nav class="sidebar-nav" id="mainNav"></nav>
+    <div class="sidebar-footer">
+      <button class="settings-btn" onclick="goToTournamentSelector()">
+        <i class="fas fa-sign-out-alt"></i> Salir
+      </button>
+    </div>
+  </aside>
+
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menú">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <main class="main" id="mainContent">
+    <div id="error-container" style="display:none; padding:2rem; text-align:center; background:var(--color-surface); border:1px solid var(--neon-red); border-radius:var(--radius); max-width:600px; margin:1rem auto;">
+      <i class="fa-solid fa-triangle-exclamation" style="font-size:3rem; color:var(--neon-red);"></i>
+      <h3 style="margin:1rem 0 0.5rem;">Error al cargar los datos</h3>
+      <p id="error-message" style="color:var(--color-text-muted);">Verifica tu conexión a internet e intenta de nuevo.</p>
+      <button onclick="location.reload()" style="margin-top:1rem; background:var(--neon-purple); color:#000; border:none; padding:0.5rem 1.5rem; border-radius:var(--radius); font-weight:700; cursor:pointer;">Reintentar</button>
+    </div>
+    <div id="sectionsContainer"></div>
+  </main>
+</div>
+
+<div id="tournament-selector" class="tournament-overlay" style="display:none;">
+  <div class="tournament-modal">
+    <h2>🏆 Selecciona una División</h2>
+    <p class="sub">Elige el torneo que deseas visualizar</p>
+    <div class="tournament-cards">
+      <div class="tournament-card" onclick="selectTournament(1)">
+        <img id="selector-logo1" src="" alt="Logo 1ª División" />
+        <h3 id="selector-name1">1ª División</h3>
+        <span class="badge first">🏆 1ª DIVISIÓN</span>
+        <div class="info" id="selector-info1">Cargando...</div>
+      </div>
+      <div class="tournament-card" onclick="selectTournament(2)">
+        <img id="selector-logo2" src="" alt="Logo 2ª División" />
+        <h3 id="selector-name2">2ª División</h3>
+        <span class="badge second">⭐ 2ª DIVISIÓN</span>
+        <div class="info" id="selector-info2">Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="profile-modal-overlay" class="profile-modal-overlay">
+  <div class="profile-modal" id="profile-modal-content"></div>
+</div>
+
+<div id="adv-search-overlay" class="adv-search-overlay">
+  <div class="adv-search-modal">
+    <h3><i class="fas fa-sliders-h"></i> Búsqueda Avanzada</h3>
+    <div class="form-group">
+      <label>Rango mínimo</label>
+      <select id="adv-rank-min">
+        <option value="">Cualquier</option>
+        <option value="Bronce">Bronce</option>
+        <option value="Plata">Plata</option>
+        <option value="Oro">Oro</option>
+        <option value="Platino">Platino</option>
+        <option value="Diamante">Diamante</option>
+        <option value="Campeón">Campeón</option>
+        <option value="Gran Campeón">Gran Campeón</option>
+        <option value="SSL">SSL</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Rango máximo</label>
+      <select id="adv-rank-max">
+        <option value="">Cualquier</option>
+        <option value="Bronce">Bronce</option>
+        <option value="Plata">Plata</option>
+        <option value="Oro">Oro</option>
+        <option value="Platino">Platino</option>
+        <option value="Diamante">Diamante</option>
+        <option value="Campeón">Campeón</option>
+        <option value="Gran Campeón">Gran Campeón</option>
+        <option value="SSL">SSL</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Nivel (División)</label>
+      <select id="adv-division">
+        <option value="">Cualquier</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </div>
+    <div class="form-group row">
+      <div>
+        <label>Precio mínimo</label>
+        <input type="number" id="adv-price-min" placeholder="0" min="0" step="100" />
+      </div>
+      <div>
+        <label>Precio máximo</label>
+        <input type="number" id="adv-price-max" placeholder="Sin límite" min="0" step="100" />
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-cancel" onclick="closeAdvancedSearch()">Cancelar</button>
+      <button class="btn-clear" onclick="clearAdvancedSearch()">Limpiar filtros</button>
+      <button class="btn-apply" onclick="applyAdvancedSearch()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<div id="perf-tooltip">
+  <div class="jornada" id="tooltip-jornada"></div>
+  <div class="stats" id="tooltip-stats"></div>
+  <div class="match" id="tooltip-match"></div>
+</div>
+
+<script src="script.js"></script>
+<script src="playoffs-bracket-patch.js"></script>
+<script src="player-history-patch.js"></script>
+</body>
+</html>
